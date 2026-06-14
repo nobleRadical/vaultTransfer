@@ -154,6 +154,7 @@ local prev_query = nil
                 term.clear()
                 term.setCursorPos(1,1)
                 local v = search_index[sel]
+                if v==nil then break end
                 local item = vault.getItemDetail(v.instances[1].slot)
                 ku.colorWrite("> "..cur.." ",colors.white)
                 write(sel)
