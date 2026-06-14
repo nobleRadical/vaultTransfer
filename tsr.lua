@@ -1,22 +1,49 @@
 -- Edit this.
 -- Type the side of the computer 
--- that the IO chest is on.
+-- that the IO chest is on, or its name if on a network.
 IO_Chest = "minecraft:barrel_0"
 
 --don't edit the rest of this.
+ku = require "kasutils"
+cc = require "cc.completion"
+
+
 ioc_name = IO_Chest
 ioc = peripheral.wrap(ioc_name)
-vault = peripheral.find("create:item_vault") or
-peripheral.find("create_connected:item_silo")
-vault_name = peripheral.getName(vault)
-if (not ioc or not vault) then
+
+item_vault = peripheral.find("create:item_vault") or
+    peripheral.find("create_connected:item_silo")
+item_vault_name = peripheral.getName(vault)
+
+if (not ioc or not item_vault) then
     printError("Can't find vault and chest. \
 Either they are missing or the program isn't configured correctly. \
 Open the program with 'edit transfer' and check that the variable \
 at the top of the program are correct.")
+sleep(2)
 end
-ku = require "kasutils"
-cc = require "cc.completion"
+
+-- the generic vault
+--These function's contracts (signatures, in other languages)
+--should not change, but the contents may. 
+vault = {
+list = function()
+-- returns list of items like inventory.list()
+    return item_vault.list()
+end,
+vaultToIOC = function(fromSlot, amt, toSlot) -- amt and toSlot are nullable
+-- returns number of items transferred
+    return item_vault.pushItems(ioc_name, fromSlot, amt, toSlot)
+end,
+IOCToVault = function(fromSlot, amt, toSlot) -- amt and toSlot are nullable
+-- returns number of items transferred
+    return item_vault.pullItems(ioc_name, fromSlot, amt, toSlot)
+end,
+size = function()
+    return item_vault.size()
+end
+}
+
 
 function CLI()
 term.clear()
@@ -52,60 +79,56 @@ end
 end
  
 function dump()
-for slot,item in pairs(ioc.list()) do
-local numtr = ioc.pushItems(vault_name,slot)
-if (numtr<1) then printError("Dump Transfer Failure | slot"..slot) 
-else print("Dumped "..numtr.." "..item.name.." from slot "..slot) end
-end
+    for slot,item in pairs(ioc.list()) do
+        local numtr = vault.IOCToVault(slot)
+        if (numtr<1) then 
+            printError("Dump Transfer Failure | slot"..slot) 
+        else 
+            print("Dumped "..numtr.." "..item.name.." from slot "..slot) 
+        end
+    end
 end
  
 function search(bDisplayName)
 local search_index = {}
     -- "completion function" for read hack
     function _compPrint(read_buffer, cur)
-    local out_name = nil
-    term.clear()
-    --header (read buffer)
-    term.setCursorPos(1,1)
-    if (not cur) then write(">") end
-    write(read_buffer)
-    --search list (limit 15 items)
-    term.setCursorPos(1,2)
-    local i = 1
-    for k,v in pairs(search_index) do
-        if (string.sub(k,1,string.len(read_buffer))==read_buffer
-        or string.sub(k,-string.len(read_buffer))==read_buffer) then
-            --name starts with read buffer: match
-            if (cur==i) then
-                out_name = k
-                local item = vault.getItemDetail(v.instances[1].slot)
-                ku.colorWrite("> "..i.." ",colors.white)
-                write(k)
-                ku.colorPrint(" "..v.count,colors.lightGray)
-                ku.colorWrite("    "..item.displayName,colors.lightBlue)
-                if item.enchantments then
-                    ku.colorWrite(" | ench: ",colors.lightBlue)
-                    for _,v in pairs(item.enchantments) do
-                        ku.colorWrite(v.displayName.." ",colors.purple)
-                    end
-                    print("") -- newline
-                else
+        local out_name = nil
+        term.clear()
+        
+        --header (read buffer)
+        term.setCursorPos(1,1)
+        if (not cur) then write(">") end
+        write(read_buffer)
+        --search list (limit 15 items)
+        term.setCursorPos(1,2)
+        local i = 1
+        for k,v in pairs(search_index) do
+            if (string.sub(k,1,string.len(read_buffer))==read_buffer
+            or string.sub(k,-string.len(read_buffer))==read_buffer) then
+                --name starts with read buffer: match
+                if (cur==i) then
+                    out_name = k
+                    local item = vault.getItemDetail(v.instances[1].slot)
+                    ku.colorWrite("> "..i.." ",colors.white)
+                    write(k)
+                    ku.colorPrint(" "..v.count,colors.lightGray)
+                    ku.colorWrite("    "..item.displayName,colors.lightBlue)
                     ku.colorPrint(" | nbt: "..(v.nbt or "--"),colors.lightBlue)
+                else
+                    ku.colorWrite(" "..i.." ",colors.gray)
+                    write(k)
+                    ku.colorPrint(" "..v.count,colors.lightGray)
                 end
-            else
-                ku.colorWrite(" "..i.." ",colors.gray)
-                write(k)
-                ku.colorPrint(" "..v.count,colors.lightGray)
+                i = i + 1
             end
-            i = i + 1
+            if (i>15) then break end
         end
-        if (i>15) then break end
-    end
-    --footer
-    local maxX,maxY = term.getSize()
-    term.setCursorPos(1,maxY)
-    if (cur) then write("[^/down] Navigate [->/Enter] Select [<-] Exit") end
-    return out_name,i-1
+        --footer
+        local maxX,maxY = term.getSize()
+        term.setCursorPos(1,maxY)
+        if (cur) then write("[^/down] Navigate [->/Enter] Select [<-] Exit") end
+        return out_name,i-1
     end
     
 _index(search_index, bDisplayName)
@@ -118,8 +141,9 @@ local prev_query = nil
         local sel, cur_max = _compPrint(query,cur)
         --event handling
         local event, key = os.pullEvent("key")
-        if (key==keys.right) or (key==keys.enter
-        or key==keys.numPadEnter) then
+        if (key==keys.right or 
+            key==keys.enter or 
+            key==keys.numPadEnter) then
             while true do
                 --deal with how many items & such
                 term.clear()
@@ -300,18 +324,6 @@ for slot, item in pairs(vault.list()) do
     if (itr>=count) then break end
 end
 print(itr.."/"..count.." items taken.")
-end
- 
-function help()
-print("(d)ump -- dumps all items in the IO chest into the vault\n")
-
-print("(s)earch -- search and retrieve. Interactive.")
-
-print "(t)ake -- retrives given item, no search."
-print "Usage: take <count> <item name>"
-print "Retrieves <number> of <item name>"
-
-print "(h)elp -- this command. displays help."
 end
  
 function getNumItems(inv)
