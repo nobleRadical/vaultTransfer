@@ -187,7 +187,7 @@ local count = tonumber(count)
 local itr = 0 -- items transferred
 for _, itable in pairs(idx_table[entry].instances) do
     local t_itr = 
-    vault.pushItems(ioc_name,itable.slot,count-itr)
+    vault.vaultToIOC(itable.slot,count-itr)
     itr = itr + t_itr
     print("Took "..t_itr.."/"..itable.count.." "..entry.." from slot "..itable.slot)
  
@@ -305,7 +305,7 @@ function empty()
     printError("Emptying vault into IO chest.")
     for k,v in pairs(vault.list()) do
         local itr = 0
-        repeat itr = vault.pushItems(ioc_name,k)
+        repeat itr = vault.vaultToIOC(k)
         if (itr==0) then
             print"No space. Retrying..."
             sleep(1)
@@ -322,7 +322,7 @@ for slot, item in pairs(vault.list()) do
     local trunc = string.gsub(item.name, ".+:","",1) -- truncated item name
     if (item.name == item_name or trunc == item_name) then
         local t_itr = 
-        vault.pushItems(ioc_name,slot,count-itr)
+        vault.vaultToIOC(slot,count-itr)
         itr = itr + t_itr
         print("Took "..t_itr.."/"..item.count.." "..item.name.." from slot "..slot)
     end
