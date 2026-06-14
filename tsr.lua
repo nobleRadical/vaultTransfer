@@ -13,7 +13,7 @@ ioc = peripheral.wrap(ioc_name)
 
 item_vault = peripheral.find("create:item_vault") or
     peripheral.find("create_connected:item_silo")
-item_vault_name = peripheral.getName(vault)
+item_vault_name = peripheral.getName(item_vault)
 
 if (not ioc or not item_vault) then
     printError("Can't find vault and chest. \
