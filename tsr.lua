@@ -34,6 +34,7 @@ end,
 getItemDetail = function(slot)
 -- returns a table entry like inventory.getItemDetail()
     return item_vault.getItemDetail(slot)
+end,
 vaultToIOC = function(fromSlot, amt, toSlot) -- amt and toSlot are nullable
 -- returns number of items transferred
     return item_vault.pushItems(ioc_name, fromSlot, amt, toSlot)
