@@ -31,6 +31,9 @@ list = function()
 -- returns list of items like inventory.list()
     return item_vault.list()
 end,
+getItemDetail = function(slot)
+-- returns a table entry like inventory.getItemDetail()
+    return item_vault.getItemDetail(slot)
 vaultToIOC = function(fromSlot, amt, toSlot) -- amt and toSlot are nullable
 -- returns number of items transferred
     return item_vault.pushItems(ioc_name, fromSlot, amt, toSlot)
@@ -135,7 +138,8 @@ _index(search_index, bDisplayName)
 
 local prev_query = nil
     --read hack: completion function
-    local query = read(nil, nil, _compPrint, prev_query) 
+    local query = read(nil, nil, _compPrint, prev_query)
+    prev_query = query
     cur = 1
     while true do    
         local sel, cur_max = _compPrint(query,cur)
