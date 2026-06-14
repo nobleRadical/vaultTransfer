@@ -208,7 +208,7 @@ for slot, item in pairs(vault.list()) do
     if (itable[entry_name] and 
     itable[entry_name].nbt~=item.nbt) then
         entry_name = entry_name.."_"..
-        string.sub(item.nbt,1,3)
+        string.sub(item.nbt or "nil",1,3)
     end
     if (not itable[entry_name]) then
         --make a new entry
